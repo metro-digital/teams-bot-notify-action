@@ -1,0 +1,23 @@
+{
+  "name": "teams-bot-notify-action",
+  "version": "0.2.2",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "ncc build src/index.ts -o dist --license licenses.txt",
+    "format": "prettier --write .",
+    "lint": "eslint . --ext .ts",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.9",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "@vercel/ncc": "^0.38.3",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.5.2",
+    "typescript": "^5.4.5"
+  },
+  "license": "Apache-2.0"
+}

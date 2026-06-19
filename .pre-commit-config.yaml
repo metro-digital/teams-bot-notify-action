@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+        exclude: ^dist/
+      - id: trailing-whitespace
+        exclude: ^dist/
+      - id: check-added-large-files
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: prettier
+        name: Prettier Format
+        entry: npx prettier --write
+        language: node
+        files: \.(js|ts|json|ya?ml|md)$
+        exclude: ^dist/
+      - id: eslint
+        name: ESLint Check
+        entry: npx eslint .
+        language: node
+        pass_filenames: false

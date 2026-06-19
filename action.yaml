@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 METRO.digital GmbH
+
+name: 'Teams Bot Message'
+description: 'Send proactive message to Microsoft Teams via Azure Bot Framework'
+inputs:
+  tenant-id:
+    description: 'Azure Tenant ID'
+    required: true
+  client-id:
+    description: 'Azure Client ID (App ID)'
+    required: true
+  channel-id:
+    description: 'Teams Channel ID'
+    required: true
+  message:
+    description: 'Message text to send'
+    required: true
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
