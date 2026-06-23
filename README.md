@@ -195,14 +195,27 @@ Instead, this action uses a **JWT client assertion flow**, where the GitHub-issu
 
 ---
 
-## Required Repository Secrets
+## Required Repository Configuration
 
-Secret names are arbitrary; the example below assumes these names.
+This action receives all configuration through action inputs. The examples below use GitHub Actions secrets and variables to provide those input values.
 
-| Secret Name        | Description                                       |
+The names of the GitHub secrets and variables are only examples. You may use different names in your repository as long as your workflow maps them to the correct action inputs.
+
+### Secrets or Variables
+
+The Azure IDs are not client secrets. They are identifiers. Store them as GitHub secrets or variables according to your organization's policy.
+
+| Example Name      | Description                              |
+| ----------------- | ---------------------------------------- |
+| `AZURE_CLIENT_ID` | Client ID of your Azure App registration |
+| `AZURE_TENANT_ID` | Tenant ID of your Azure directory        |
+
+### Variables
+
+The Teams channel ID is not a credential, so the recommended default is to store it as a GitHub Actions variable.
+
+| Example Name       | Description                                       |
 | ------------------ | ------------------------------------------------- |
-| `AZURE_CLIENT_ID`  | Client ID of your Azure App registration          |
-| `AZURE_TENANT_ID`  | Tenant ID of your Azure directory                 |
 | `TEAMS_CHANNEL_ID` | Channel ID in Microsoft Teams to send messages to |
 
 ---
@@ -246,7 +259,7 @@ jobs:
         with:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          channel-id: ${{ secrets.TEAMS_CHANNEL_ID }}
+          channel-id: ${{ vars.TEAMS_CHANNEL_ID }}
           message: ${{ github.event.inputs.message }}
 ```
 
