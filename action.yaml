@@ -16,6 +16,10 @@ inputs:
   message:
     description: 'Message text to send'
     required: true
+  as-card:
+    description: 'Render the message inside an Adaptive Card instead of plain text'
+    required: false
+    default: 'false'
 runs:
   using: 'node20'
   main: 'dist/index.js'
