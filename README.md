@@ -112,6 +112,18 @@ All other variables (names, SKU, locations, tags) can be chosen freely according
   ]
   ```
 
+  In case you need to add your app to a private channel you have to use manifest schema of at least version 1.25 and
+  `supportsChannelFeature` set to `tier1`:
+
+  ```json
+  {
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.25/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.25",
+    ...
+    "supportsChannelFeatures": "tier1"
+  }
+  ```
+
   - everything else might be left by default
   - Do not confuse these IDs:
 
@@ -126,9 +138,9 @@ All other variables (names, SKU, locations, tags) can be chosen freely according
 
   ```json
   {
-    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
-    "version": "1.0.0",
-    "manifestVersion": "1.22",
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.25/MicrosoftTeams.schema.json",
+    "version": "1.1.0",
+    "manifestVersion": "1.25",
     "id": "14771909-b752-45ff-b7ad-19fdd74fa461",
     "name": {
       "short": "cf-notifications-bot"
@@ -150,7 +162,7 @@ All other variables (names, SKU, locations, tags) can be chosen freely according
     "accentColor": "#FFFFFF",
     "bots": [
       {
-        "botId": "<Your Entra ID App registration ID>",
+        "botId": "<YOUR-ENTRA-APP-ID>",
         "scopes": ["groupChat", "team"],
         "isNotificationOnly": true,
         "supportsCalling": false,
@@ -158,32 +170,62 @@ All other variables (names, SKU, locations, tags) can be chosen freely according
         "supportsFiles": false
       }
     ],
-    "validDomains": []
+    "validDomains": [],
+    "supportsChannelFeatures": "tier1"
   }
   ```
 
 ### 4. Federated Credentials (GitHub OIDC)
 
-Keyless access to the bot service from GitHub or other sources.
-Go to your App Registration → "Certificates & secrets" → "Federated credentials":
+GitHub Actions authenticates to the bot application by using OpenID Connect (OIDC), so no client secret or long-lived key is required.
 
-- Federated credential scenario: Other issuer
+Go to your App Registration → **Certificates & secrets** → **Federated credentials** and create a new credential with:
+
+- Federated credential scenario: **Other issuer**
 - Issuer: `https://token.actions.githubusercontent.com`
-- Audience: make sure it is set to **api://AzureADTokenExchange** (this is required for GitHub OIDC)
-- Value: **Claims matching expression**, you can use a filtered expression like:
+- Audience: **api://AzureADTokenExchange**
+- Type: **Claims matching expression**
 
-```
-claims['sub'] matches 'repo:your-org/team-repo-prefix-*:ref:refs/heads/*'
+For GitHub flexible federated credentials, Microsoft requires the expression to match the `sub` claim together with at least one immutable GitHub identifier:
+
+- `repository_id` — immutable ID of one specific repository
+- `repository_owner_id` — immutable ID of the repository owner / GitHub organization
+
+For setups where multiple repositories share a naming prefix, `repository_owner_id` is usually the better fit because it allows us to keep wildcard matching on the repository name while still anchoring the trust to the immutable GitHub organization ID.
+
+For example, to allow all repositories prefixed with `team-repo-prefix-` and all branches:
+
+```text
+claims['sub'] matches 'repo:your-org/team-repo-prefix-*:ref:refs/heads/*' and claims['repository_owner_id'] eq 'YOUR_ORG_ID'
 ```
 
-If you use environments at github you might want to add this claim as well:
+If the GitHub workflows use environments, add a second credential for environment-based subjects:
 
-```
-claims['sub'] matches 'repo:your-org/team-repo-prefix-*:environment:*'
+```text
+claims['sub'] matches 'repo:your-org/team-repo-prefix-*:environment:*' and claims['repository_owner_id'] eq 'YOUR_ORG_ID'
 ```
 
-This allows any repo and each branch of that repo under your org and prefixed with `team-repo-prefix-` to use this token.
-You may want to restrict this further (for example to a single repository or environment) for security reasons.
+This means that a matching token must satisfy both conditions:
+
+1. the workflow must come from a repository matching the expected organization and repository prefix; and
+2. the repository must still belong to the same immutable GitHub organization ID.
+
+The second check matters because organization and repository names are mutable, while GitHub's numeric owner and repository IDs are stable. This prevents a renamed, transferred, or later re-created repository from accidentally matching a trust rule based only on names.
+
+If you want to restrict access to a single repository instead of a family of repositories, you can use `repository_id` instead of `repository_owner_id`.
+
+You can obtain `repository_owner_id` and `repository_id` from the GitHub OIDC token issued during a workflow run. Typical claims look like:
+
+```json
+{
+  "repository": "your-org/team-repo-prefix-service",
+  "repository_id": "123456789",
+  "repository_owner": "your-org",
+  "repository_owner_id": "98765432"
+}
+```
+
+The GitHub OIDC token must therefore be treated as the source of truth when configuring these immutable IDs.
 
 ---
 

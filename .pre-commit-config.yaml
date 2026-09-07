@@ -20,11 +20,11 @@ repos:
       - id: prettier
         name: Prettier Format
         entry: npx prettier --write
-        language: node
+        language: system
         files: \.(js|ts|json|ya?ml|md)$
         exclude: ^dist/
       - id: eslint
         name: ESLint Check
         entry: npx eslint .
-        language: node
+        language: system
         pass_filenames: false
