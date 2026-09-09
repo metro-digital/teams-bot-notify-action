@@ -269,7 +269,7 @@ This action accepts the following inputs:
 | Input        | Description                           | Required |
 | ------------ | ------------------------------------- | -------- |
 | `message`    | Message text to post to Teams         | Yes      |
-| `as-card`    | Render message inside an Adaptive Card instead of plain text | No       |
+| `as-card`    | Wraps the plain message text inside a single Adaptive Card TextBlock. It does not support buttons, facts, columns, images, or multiple text blocks — it changes how the message renders (card vs. plain text), not its structure. | No       |
 | `tenant-id`  | Your bot's app tenant id              | Yes      |
 | `client-id`  | Your bot's app client ID              | Yes      |
 | `channel-id` | Microsoft Teams channel ID to send to | Yes      |
@@ -311,11 +311,10 @@ jobs:
 ### Adaptive Card
 
 ```yaml
-name: Send Teams Message via Action
+name: Notify Teams
 
 on:
   pull_request:
-    types: [opened]
   push:
     branches: [master]
 
@@ -325,26 +324,34 @@ jobs:
     permissions:
       id-token: write
       contents: read
-
     steps:
       # This example uses an additional step to build the message instead of receiving it as input
       # Builds message for PR and push to master gh events
       # Using printf so that line breaks are taken into account
       - name: Build Teams message
         id: build_message
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_PROJECT: ${{ github.event.pull_request.base.repo.name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PUSH_AUTHOR: ${{ github.actor }}
+          PUSH_PROJECT: ${{ github.event.repository.name }}
+          PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          PUSH_COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            MSG=$(printf '# PR submitted by **%s**\n## Project: **%s**\n**%s** --> [link](%s)' \
-              "${{ github.event.pull_request.user.login }}" \
-              "${{ github.event.pull_request.base.repo.name }}" \
-              "${{ github.event.pull_request.title }}" \
-              "${{ github.event.pull_request.html_url }}")
+            MSG=$(printf 'PR submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
+              "$PR_AUTHOR" \
+              "$PR_PROJECT" \
+              "$PR_TITLE" \
+              "$PR_URL")
           elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/master" ]; then
-            MSG=$(printf '# Push to master submitted by **%s**\n## Project: **%s**\n**%s** --> [link](%s)' \
-              "${{ github.actor }}" \
-              "${{ github.event.repository.name }}" \
-              "${{ github.event.head_commit.message }}" \
-              "${{ github.event.head_commit.url }}")
+            MSG=$(printf 'Push to master submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
+              "$PUSH_AUTHOR" \
+              "$PUSH_PROJECT" \
+              "$PUSH_COMMIT_MSG" \
+              "$PUSH_COMMIT_URL")
           else
             MSG=""
           fi
@@ -355,12 +362,13 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Use Action to Send Message
+      - name: Notify Teams
+        if: steps.build_message.outputs.message != ''
         uses: metro-digital/teams-bot-notify-action@v0
         with:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          channel-id: ${{ vars.TEAMS_CHANNEL_ID }}
+          channel-id: ${{ secrets.TEAMS_CHANNEL_ID }}
           message: ${{ steps.build_message.outputs.message }}
           as-card: 'true'
 ```

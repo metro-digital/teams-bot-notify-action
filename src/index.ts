@@ -15,6 +15,17 @@ function getInput(name: string, required = false): string {
   return value;
 }
 
+function getBooleanInput(name: string, defaultValue: boolean = false): boolean {
+  const raw = getInput(name);
+  if (raw === '') {
+    return defaultValue;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  throw new Error(`Input '${name}' must be 'true' or 'false', got: '${raw}'`);
+}
+
 function info(message: string): void {
   console.log(message);
 }
@@ -45,8 +56,7 @@ async function run(): Promise<void> {
     const clientId = getInput('client-id', true);
     const channelId = getInput('channel-id', true);
     const message = getInput('message', true);
-    const asCard = getInput('as-card').toLowerCase() === 'true';
-
+    const asCard = getBooleanInput('as-card');
     const oidcToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
     const oidcUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
 
@@ -54,7 +64,7 @@ async function run(): Promise<void> {
       throw new Error('OIDC token or URL missing from environment.');
     }
 
-    info('Getting Azure token...');
+    info('Getting Azure token...'); 
 
     const oidcResponse = await fetchJson<{ value: string }>(
       `${oidcUrl}&audience=api://AzureADTokenExchange`,
