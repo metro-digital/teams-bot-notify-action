@@ -266,16 +266,19 @@ The Teams channel ID is not a credential, so the recommended default is to store
 
 This action accepts the following inputs:
 
-| Input        | Description                           | Required |
-| ------------ | ------------------------------------- | -------- |
-| `message`    | Message text to post to Teams         | Yes      |
-| `tenant-id`  | Your bot's app tenant id              | Yes      |
-| `client-id`  | Your bot's app client ID              | Yes      |
-| `channel-id` | Microsoft Teams channel ID to send to | Yes      |
+| Input        | Description                                                                                                                                                                                                                       | Required |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `message`    | Message text to post to Teams                                                                                                                                                                                                     | Yes      |
+| `as-card`    | Wraps the plain message text inside a single Adaptive Card TextBlock. It does not support buttons, facts, columns, images, or multiple text blocks — it changes how the message renders (card vs. plain text), not its structure. | No       |
+| `tenant-id`  | Your bot's app tenant id                                                                                                                                                                                                          | Yes      |
+| `client-id`  | Your bot's app client ID                                                                                                                                                                                                          | Yes      |
+| `channel-id` | Microsoft Teams channel ID to send to                                                                                                                                                                                             | Yes      |
 
 ---
 
 ## Example Usage
+
+### Plain text
 
 ```yaml
 name: Send Teams Message via Action
@@ -303,6 +306,77 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           channel-id: ${{ vars.TEAMS_CHANNEL_ID }}
           message: ${{ github.event.inputs.message }}
+```
+
+### Adaptive Card
+
+```yaml
+name: Notify Teams
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  notify-teams:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      # This example uses an additional step to build the message instead of receiving it as input
+      # Builds message for PR and push to master gh events
+      # Using printf so that line breaks are taken into account
+      - name: Build Teams message
+        id: build_message
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_PROJECT: ${{ github.event.pull_request.base.repo.name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PUSH_AUTHOR: ${{ github.actor }}
+          PUSH_PROJECT: ${{ github.event.repository.name }}
+          PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
+          PUSH_COMMIT_URL: ${{ github.event.head_commit.url }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            MSG=$(printf 'PR submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
+              "$PR_AUTHOR" \
+              "$PR_PROJECT" \
+              "$PR_TITLE" \
+              "$PR_URL")
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/master" ]; then
+            MSG=$(printf 'Push to master submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
+              "$PUSH_AUTHOR" \
+              "$PUSH_PROJECT" \
+              "$PUSH_COMMIT_MSG" \
+              "$PUSH_COMMIT_URL")
+          else
+            MSG=""
+          fi
+
+          if command -v openssl >/dev/null 2>&1; then
+            DELIMITER="EOF_$(openssl rand -hex 16)"
+          else
+            DELIMITER="EOF_$(head -c16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          fi
+
+          {
+            echo "message<<$DELIMITER"
+            echo "$MSG"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Notify Teams
+        if: steps.build_message.outputs.message != ''
+        uses: metro-digital/teams-bot-notify-action@v0
+        with:
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          channel-id: ${{ secrets.TEAMS_CHANNEL_ID }}
+          message: ${{ steps.build_message.outputs.message }}
+          as-card: 'true'
 ```
 
 ---

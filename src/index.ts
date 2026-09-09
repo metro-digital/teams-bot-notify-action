@@ -15,6 +15,17 @@ function getInput(name: string, required = false): string {
   return value;
 }
 
+function getBooleanInput(name: string, defaultValue: boolean = false): boolean {
+  const raw = getInput(name);
+  if (raw === '') {
+    return defaultValue;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  throw new Error(`Input '${name}' must be 'true' or 'false', got: '${raw}'`);
+}
+
 function info(message: string): void {
   console.log(message);
 }
@@ -45,7 +56,7 @@ async function run(): Promise<void> {
     const clientId = getInput('client-id', true);
     const channelId = getInput('channel-id', true);
     const message = getInput('message', true);
-
+    const asCard = getBooleanInput('as-card');
     const oidcToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
     const oidcUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
 
@@ -82,6 +93,29 @@ async function run(): Promise<void> {
     const azureToken = tokenResponse.access_token;
     info('Azure token obtained');
 
+    const activity = asCard
+      ? {
+          type: 'message',
+          attachments: [
+            {
+              contentType: 'application/vnd.microsoft.card.adaptive',
+              content: {
+                $schema: 'http://adaptivecards.io/schemas/adaptive-card.json',
+                type: 'AdaptiveCard',
+                version: '1.4',
+                body: [
+                  {
+                    type: 'TextBlock',
+                    text: message,
+                    wrap: true,
+                  },
+                ],
+              },
+            },
+          ],
+        }
+      : { type: 'message', text: message };
+
     const response = await fetch('https://smba.trafficmanager.net/teams/v3/conversations', {
       method: 'POST',
       headers: {
@@ -91,7 +125,7 @@ async function run(): Promise<void> {
       body: JSON.stringify({
         isGroup: true,
         channelData: { channel: { id: channelId } },
-        activity: { type: 'message', text: message },
+        activity,
       }),
     });
 

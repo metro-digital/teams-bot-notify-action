@@ -16,6 +16,10 @@ inputs:
   message:
     description: 'Message text to send'
     required: true
+  as-card:
+    description: 'Wraps the plain message text inside a single Adaptive Card TextBlock. It does not support buttons, facts, columns, images, or multiple text blocks — it changes how the message renders (card vs. plain text), not its structure.'
+    required: false
+    default: 'false'
 runs:
   using: 'node20'
   main: 'dist/index.js'
