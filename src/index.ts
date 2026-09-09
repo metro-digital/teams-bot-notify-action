@@ -64,7 +64,7 @@ async function run(): Promise<void> {
       throw new Error('OIDC token or URL missing from environment.');
     }
 
-    info('Getting Azure token...'); 
+    info('Getting Azure token...');
 
     const oidcResponse = await fetchJson<{ value: string }>(
       `${oidcUrl}&audience=api://AzureADTokenExchange`,
@@ -92,7 +92,7 @@ async function run(): Promise<void> {
 
     const azureToken = tokenResponse.access_token;
     info('Azure token obtained');
-    
+
     const activity = asCard
       ? {
           type: 'message',

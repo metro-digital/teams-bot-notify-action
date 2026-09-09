@@ -266,13 +266,13 @@ The Teams channel ID is not a credential, so the recommended default is to store
 
 This action accepts the following inputs:
 
-| Input        | Description                           | Required |
-| ------------ | ------------------------------------- | -------- |
-| `message`    | Message text to post to Teams         | Yes      |
+| Input        | Description                                                                                                                                                                                                                       | Required |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| `message`    | Message text to post to Teams                                                                                                                                                                                                     | Yes      |
 | `as-card`    | Wraps the plain message text inside a single Adaptive Card TextBlock. It does not support buttons, facts, columns, images, or multiple text blocks — it changes how the message renders (card vs. plain text), not its structure. | No       |
-| `tenant-id`  | Your bot's app tenant id              | Yes      |
-| `client-id`  | Your bot's app client ID              | Yes      |
-| `channel-id` | Microsoft Teams channel ID to send to | Yes      |
+| `tenant-id`  | Your bot's app tenant id                                                                                                                                                                                                          | Yes      |
+| `client-id`  | Your bot's app client ID                                                                                                                                                                                                          | Yes      |
+| `channel-id` | Microsoft Teams channel ID to send to                                                                                                                                                                                             | Yes      |
 
 ---
 
