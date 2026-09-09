@@ -340,13 +340,13 @@ jobs:
           PUSH_COMMIT_MSG: ${{ github.event.head_commit.message }}
           PUSH_COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             MSG=$(printf 'PR submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
               "$PR_AUTHOR" \
               "$PR_PROJECT" \
               "$PR_TITLE" \
               "$PR_URL")
-          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/master" ]; then
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF" = "refs/heads/master" ]; then
             MSG=$(printf 'Push to master submitted by **%s**\n\nProject: **%s**\n\n**%s** --> [link](%s)' \
               "$PUSH_AUTHOR" \
               "$PUSH_PROJECT" \
@@ -356,10 +356,16 @@ jobs:
             MSG=""
           fi
 
+          if command -v openssl >/dev/null 2>&1; then
+            DELIMITER="EOF_$(openssl rand -hex 16)"
+          else
+            DELIMITER="EOF_$(head -c16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          fi
+
           {
-            echo "message<<EOF"
+            echo "message<<$DELIMITER"
             echo "$MSG"
-            echo "EOF"
+            echo "$DELIMITER"
           } >> "$GITHUB_OUTPUT"
 
       - name: Notify Teams
